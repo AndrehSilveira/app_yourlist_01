@@ -1,228 +1,175 @@
-import 'package:projeto_andre/tela_login.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:projeto_andre/tela_inicial.dart';
 
-class Item {
-  final String descricao;
-  final double preco;
-
-  Item(this.descricao, this.preco);
-}
+// import 'main.dart';
+// import 'criar_conta.dart';
+// import 'inserir_documento.dart';
+// import 'tela_login.dart';
 
 class Listagem extends StatefulWidget {
   const Listagem({Key? key}) : super(key: key);
 
   @override
-  _Listagem createState() => _Listagem();
+  _ListagemPageState createState() => _ListagemPageState();
 }
 
-class _Listagem extends State<Listagem> {
-  //lista dinâmica para armazenamento das tarefas
-  //var lista = [];
-  final List<Item> lista = [];
+class _ListagemPageState extends State<Listagem> {
+  //Referenciar a Coleção de Cafés
+  late CollectionReference lojas;
 
-  Item macarrao = Item('Macarrao', 2.50);
-  Item feijao = Item('Feijao', 8.50);
-    var txtTarefa = TextEditingController();
-  var txtPreco = TextEditingController();
-
-  double totalPreco = 0.00;
+  //VARIAVEL PARA REALIZAR A SOMA DE TODOS OS PRODUTOS
+  //double soma = 0;
 
   @override
   void initState() {
-    lista.add(macarrao);
-    lista.add(feijao);
-    // lista.add("Ir ao supermercado", 2.50);
-    // lista.add("Comprar ração para o cachorro");
-    // lista.add("Trocar a lâmpada da cozinha");
-    // lista.add("Pagar a conta de internet");
-    // lista.add("Comprar um ventilador novo");
-    // lista.add("Abastecer o veículo");
-    // lista.add("Cortar o cabelo");
     super.initState();
+
+    lojas = FirebaseFirestore.instance.collection('lojas');
   }
+
+  //
+  // Item Lista
+  // Definir a aparência de cada item da lista
+  Widget itemLista(item) {
+    //setState(() {
+    String nome = item.data()['nome'].replaceFirst(',', '.');
+    String preco = item.data()['preco'].replaceFirst(',', '.');
+    //}),
+
+    //Somar os itens da lista
+    //soma = soma + double.parse(preco);
+
+    return ListTile(
+      title: Text(nome, style: const TextStyle(fontSize: 30)),
+      subtitle: Text('R\$ $preco', style: const TextStyle(fontSize: 20)),
+      trailing: IconButton(
+          icon: const Icon(Icons.delete),
+          onPressed: () {
+            //
+            // APAGAR UM DOCUMENTO DA COLEÇÃO
+            //
+            lojas.doc(item.id).delete();
+          }),
+      onTap: () {
+        Navigator.pushNamed(context, 't6', arguments: item.id);
+      },
+    );
+  }
+
+// Buscar os dados do usuário logado
+  // getNomeUsuario(id) async {
+  //   return await FirebaseFirestore.instance
+  //       .collection('usuarios')
+  //       .doc(id)
+  //       .get()
+  //       .then((doc) {
+  //     return doc.get('nome');
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('YourList'),
-        backgroundColor: Colors.red.shade400,
         leading: new IconButton(
-          icon: new Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            icon: new Icon(
+              Icons.arrow_back,
+              color: Colors.white,
+            )),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('YourList', style: TextStyle(fontSize: 25)),
+            SizedBox(
+              width: 10,
+            ),
+
+            // PARA O E-MAIL DO USUÁRIO APARECER QUANDO LOGADO:
+            //Text(FirebaseAuth.instance.currentUser!.email.toString()),
+
+            //PARA O NOME DO USUÁRIO APARECER QUANDO LOGADO:
+            // FutureBuilder(
+            //     future: getNomeUsuario(
+            //         FirebaseAuth.instance.currentUser!.uid.toString()),
+            //     builder: (context, snapshot) {
+            //       if (snapshot.hasData) {
+            //         return Center(
+            //           child: Text(
+            //             snapshot.data.toString(),
+            //             style: const TextStyle(fontSize: 20.0),
+            //           ),
+            //         );
+            //       } else {
+            //         return const Center(
+            //           child: CircularProgressIndicator(),
+            //         );
+            //       }
+            //     })
+          ],
         ),
+        //centerTitle: true,
+        backgroundColor: Colors.red.shade400,
+        //automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              FirebaseAuth.instance.signOut();
+              Navigator.pushReplacementNamed(context, 't1');
+            },
+          )
+        ],
       ),
 
+      //
+      // EXIBIR OS DOCUMENTOS DA COLEÇÃO
+      //
       body: Container(
-        padding: EdgeInsets.all(30),
-        color: Colors.red.shade100,
+        padding: EdgeInsets.fromLTRB(0, 0, 0, 90),
+        child: StreamBuilder<QuerySnapshot>(
 
-        //
-        // ListView
-        //
-        child: ListView.builder(
-          //definir a orientação (horizontal ou vertical)
-          scrollDirection: Axis.vertical,
+            //fonte de dados (coleção)
+            stream: lojas.snapshots(),
 
-          //separatorBuilder: (context,index){
-          //  return Divider(
-          //    color: Colors.grey.shade400,
-          //    thickness: 1,
-          //  );
-          //},
+            //exibir os dados retornados
+            builder: (context, snapshot) {
+              switch (snapshot.connectionState) {
+                case ConnectionState.none:
+                  return const Center(
+                      child: Text('Não foi possível conectar ao Firebase'));
 
-          //definir a quantidade de itens
-          itemCount: lista.length,
+                case ConnectionState.waiting:
+                  return const Center(child: CircularProgressIndicator());
 
-          //definir a aparência dos itens da lista
-          itemBuilder: (context, index) {
-            final _item = lista[index];
-            totalPreco += _item.preco;
-
-            return Card(
-              elevation: 10,
-              shadowColor: Colors.red.shade400,
-              child: ListTile(
-                // leading: Text(
-                //   totalPreco.toString(),
-                // ),
-                //leading: Icon(Icons.task_outlined),
-                title: Container(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _item.descricao,
-                        style: TextStyle(fontSize: 15),
-                      ),
-                      Text(
-                        'R\$ ${_item.preco.toString()}',
-                        style: TextStyle(fontSize: 15),
-                      ),
-                    ],
-                  ),
-                ),
-
-                //subtitle: Text('Clique aqui para selecionar o item da lista'),
-
-                trailing: IconButton(
-                  icon: Icon(Icons.delete_outline),
-                  onPressed: () {
-                    //remover um item da lista
-                    setState(() {
-                      lista.removeAt(index);
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: Text('Produto removido com sucesso'),
-                        duration: Duration(seconds: 2),
-                      ));
-                    });
-                  },
-                ),
-
-                //selecionar item da lista
-                hoverColor: Colors.red.shade100,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('Produto selecionado: ${lista[index]}'),
-                    duration: Duration(seconds: 3),
-                  ));
-                  Navigator.pop(context);
-                },
-              ),
-            );
-          },
-        ),
+                //dados recebidos
+                default:
+                  final dados = snapshot.requireData;
+                  return ListView.builder(
+                      itemCount: dados.size,
+                      itemBuilder: (context, index) {
+                        return itemLista(dados.docs[index]);
+                      });
+              }
+            }),
       ),
 
-      //
-      // ADICIONAR tarefas
-      //
-      floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.blue.shade900,
-        child: Icon(Icons.add),
-        onPressed: () async {
-          await showDialog(
-              context: context,
-              builder: (context) {
-                return AlertDialog(
-                  title: Text(
-                    'Adicionar na Lista',
-                    style: TextStyle(
-                      fontSize: 23,
-                    ),
-                  ),
-                  content: Container(
-                    height: 150,
-                    child: Column(
-                      children: [
-                        TextField(
-                          controller: txtTarefa,
-                          autofocus: true,
-                          decoration: InputDecoration(
-                              labelText: 'Produto',
-                              labelStyle:
-                                  new TextStyle(color: Colors.red.shade400)),
-                          style: TextStyle(
-                            fontSize: 20,
-                          ),
-                        ),
-                        TextField(
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                              labelText: 'Preço',
-                              labelStyle:
-                                  new TextStyle(color: Colors.red.shade400)),
-                          controller: txtPreco,
-                          style: TextStyle(
-                            fontSize: 20,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      child: Text('ok'),
-                      onPressed: () {
-                        setState(() {
-                          var msg = '';
-                          if (txtTarefa.text.isNotEmpty) {
-                            Item _item = Item(
-                                txtTarefa.text, double.parse(txtPreco.text.replaceFirst(',','.')));
-                            lista.add(_item);
-                            txtTarefa.clear();
-                            txtPreco.clear();
-                            msg = 'Produto adicionado com sucesso.';
-                          } else {
-                            msg =
-                                'Descreva o nome do produto para adicionar a lista.';
-                          }
-
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text(msg),
-                            duration: Duration(seconds: 3),
-                          ));
-                        });
-
-                        Navigator.pop(context);
-                      },
-                    ),
-                    TextButton(
-                      child: Text('cancelar'),
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ],
-                );
-              });
+      backgroundColor: Colors.red.shade100,
+      floatingActionButton:
+          //Padding(
+          //  padding: const EdgeInsets.only(right: 70),
+          //child:
+          FloatingActionButton(
+        foregroundColor: Colors.white,
+        backgroundColor: Colors.red,
+        child: const Icon(Icons.add),
+        onPressed: () {
+          Navigator.pushNamed(context, 't6');
         },
       ),
     );
   }
 }
-

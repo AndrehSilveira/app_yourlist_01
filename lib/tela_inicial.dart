@@ -1,7 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:projeto_andre/tela_login.dart';
 import 'package:flutter/material.dart';
-//import 'package:projeto_andre/listagem.dart';
+
 
 class TelaInicial extends StatefulWidget {
   const TelaInicial({Key? key}) : super(key: key);
@@ -11,18 +12,79 @@ class TelaInicial extends StatefulWidget {
 }
 
 class _TelaInicial extends State<TelaInicial> {
+
+  getNomeUsuario(id) async {
+    return await FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(id)
+        .get()
+        .then((doc) {
+      return doc.get('nome');
+    });
+  }
+  
   @override
   //Widget build(BuildContext context) {
     
 
     Widget build(BuildContext context) {
-      var obj = ModalRoute.of(context)!.settings.arguments as Cadastro;
+      //var obj = ModalRoute.of(context)!.settings.arguments as Cadastro;
       return Scaffold(
         //Barra superior de título
         appBar: AppBar(
-          title: const Text('YourList'),
-          backgroundColor: Colors.red.shade400,
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('YourList', style: TextStyle(fontSize: 25)),
+            
+            //PARA EXIBIR O E-MAIL DE QUEM ESTÁ LOGADO
+            //Text(FirebaseAuth.instance.currentUser!.email.toString()),
+
+            //PARA EXIBIR O NOME DE QUEM ESTÁ LOGADO
+            // FutureBuilder(
+            //     future: getNomeUsuario(
+            //         FirebaseAuth.instance.currentUser!.uid.toString()),
+            //     builder: (context, snapshot) {
+            //       if (snapshot.hasData) {
+            //         return Center(
+            //           child: Text(
+            //             snapshot.data.toString(),
+            //             //textAlign: TextAlign.center,
+            //             style: const TextStyle(fontSize: 20),
+            //           ),
+            //         );
+            //       } else {
+            //         return const Center(
+            //           child: CircularProgressIndicator(),
+            //         );
+            //       }
+            //     })
+          ],
         ),
+        
+        leading: new IconButton(
+            icon: new Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.red.shade400,
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              FirebaseAuth.instance.signOut();
+              Navigator.pushReplacementNamed(context, 't1');
+            },
+          )
+        ],
+      ),
+        //appBar: AppBar(
+        //  title: const Text('YourList'),
+        //  backgroundColor: Colors.red.shade400,
+        //),
         body: Container(
           //largura responsiva
           width: MediaQuery.of(context).size.width,
@@ -30,7 +92,7 @@ class _TelaInicial extends State<TelaInicial> {
           child: SingleChildScrollView(
             child: Column(
               children: [
-                Text('Bem vindo ' + obj.nome,style: TextStyle(fontSize: 24),),
+                //Text('Bem vindo ' + obj.nome,style: TextStyle(fontSize: 24),),
                 SizedBox(height: 10,),
                 Caminho('Lista', 'Faça aqui a sua lista!', 
                     'lib/img/lista.jpg', 't3'),
